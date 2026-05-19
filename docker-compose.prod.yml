@@ -1,0 +1,137 @@
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - "2181:2181"
+    networks:
+      - iot-network
+
+  kafka1:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka1
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9091,INTERNAL://kafka1:29091
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9091,INTERNAL://0.0.0.0:29091
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    ports:
+      - "9091:9091"
+    networks:
+      - iot-network
+
+  kafka2:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka2
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,INTERNAL://kafka2:29092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,INTERNAL://0.0.0.0:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    ports:
+      - "9092:9092"
+    networks:
+      - iot-network
+
+  kafka3:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka3
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9093,INTERNAL://kafka3:29093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9093,INTERNAL://0.0.0.0:29093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    ports:
+      - "9093:9093"
+    networks:
+      - iot-network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka1:29091,kafka2:29092,kafka3:29093
+    ports:
+      - "8080:8080"
+    networks:
+      - iot-network
+
+  spark-pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
+    container_name: spark-pipeline
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka1:29091,kafka2:29092,kafka3:29093
+    volumes:
+      - ./datalake:/datalake
+      - ./checkpoints:/checkpoints
+    networks:
+      - iot-network
+
+  rest-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: rest-api
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka1:29091,kafka2:29092,kafka3:29093
+      DATA_LAKE_PATH: /datalake
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./datalake:/datalake
+    networks:
+      - iot-network
+
+  producer:
+    build:
+      context: .
+      dockerfile: Dockerfile.producer
+    container_name: producer
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka1:29091,kafka2:29092,kafka3:29093
+    networks:
+      - iot-network
+    command: ["python", "/app/src/producer.py", "--count", "500", "--rate", "10", "--source", "docker-site"]
+
+networks:
+  iot-network:
+    driver: bridge

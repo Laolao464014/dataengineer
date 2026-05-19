@@ -1,0 +1,29 @@
+
+FROM apache/spark:3.5.3
+
+USER root
+
+RUN apt-get update && apt-get install -y python3-pip python3 && \
+    rm -rf /var/lib/apt/lists/* && \
+    ln -s /usr/bin/python3 /usr/bin/python
+
+
+COPY requirements.txt /app/requirements.txt
+RUN pip3 install --no-cache-dir -r /app/requirements.txt
+
+
+RUN spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.3 --version || true
+
+
+COPY src/ /app/src/
+COPY api/ /app/api/
+
+WORKDIR /app
+
+
+ENV SPARK_HOME=/opt/spark
+ENV PATH=$PATH:$SPARK_HOME/bin
+ENV PYSPARK_PYTHON=/usr/bin/python3
+
+
+CMD ["spark-submit", "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.3", "--master", "local[*]", "/app/src/spark_pipeline.py"]
