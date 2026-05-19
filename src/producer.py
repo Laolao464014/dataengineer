@@ -15,7 +15,7 @@ from kafka import KafkaProducer
 from kafka.errors import KafkaError
 
 # Configuration
-KAFKA_BOOTSTRAP_SERVERS = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9091,localhost:9092,localhost:9093').split(',')
+KAFKA_BOOTSTRAP_SERVERS = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'kafka1:29091,kafka2:29092,kafka3:29093').split(',')
 TOPIC_NAME = 'sensor-events'
 
 # Sensor configurations

@@ -1,5 +1,4 @@
-
-echo "FROM python:3.10-slim
+FROM python:3.10-slim
 
 WORKDIR /app
 
@@ -10,5 +9,5 @@ COPY src/ /app/src/
 
 ENV KAFKA_BOOTSTRAP_SERVERS=kafka1:29091,kafka2:29092,kafka3:29093
 
-ENTRYPOINT [\"python\", \"/app/src/producer.py\"]
-CMD [\"--count\", \"500\", \"--rate\", \"10\", \"--source\", \"docker-site\"]" > Dockerfile.producer
+ENTRYPOINT ["python", "/app/src/producer.py"]
+CMD ["--count", "500", "--rate", "10", "--source", "docker-site"]

@@ -10,7 +10,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, count, avg, stddev, min, max, sum, when, hour
 
 # Configuration
-DATA_LAKE_PATH = "/tmp/datalake"
+DATA_LAKE_PATH = os.environ.get('DATA_LAKE_PATH', '/tmp/datalake')
 OUTPUT_PATH = "outputs/analytics"
 
 
